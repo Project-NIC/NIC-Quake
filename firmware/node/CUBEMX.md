@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="../NIC-Quake.svg" width="170"/>
+  <img src="../../NIC-Quake.svg" width="170"/>
 </p>
 
 ★ N.I.C. ★
