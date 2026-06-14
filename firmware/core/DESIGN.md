@@ -418,8 +418,12 @@ either way**; the only difference is whether the per-second sample *count* is co
 labelling question, not a timing error — its instant is the same on both sides and
 miniSEED's per-record start time absorbs it. Correctness needs no disciplined clock;
 uniform counts are a convenience, so the working default is "just write the time" and
-let it float. (If ever steered, the actuator need not be analog: an on-chip
-fractional-N PLL — FRACN — or a digitally-trimmed oscillator does it with no DAC.)
+let it float. And because every node shares the one central clock, absolute drift
+shifts the whole record *uniformly* — it never distorts the inter-station structure
+that onset-picking and cross-correlation read; sharper absolute time only sharpens
+that downstream matching, it is not a correctness need. (If ever steered, the actuator
+need not be analog: an on-chip fractional-N PLL — FRACN — or a digitally-trimmed
+oscillator does it with no DAC.)
 
 **DMD keyframes are dense anchors.** When the stream is DMD-compressed a keyframe falls
 every few samples (≈ one in eight in the seismic profile). Each keyframe is a natural
@@ -429,7 +433,10 @@ simply float — write the time as the data arrives, no alignment.
 
 **Sync-source budget.** *Relative* timing within a bus is the shared clock — sub-µs
 whatever the absolute source. *Absolute* timing depends on that source: a **GPS/PPS**
-anchor gives sub-ms (single-digit µs); a **LoRa-only** occasional sync gives far less.
+anchor gives sub-ms (single-digit µs); **WiFi NTP/SNTP** — free on the ESP32 head-end —
+gives ms on a LAN, tens of ms over the internet (sub-ms only with PTP and MAC-level
+hardware timestamps); **BT/BLE** lands ms-to-tens-of-ms, useful mainly as a local or
+setup-time sync; and a **LoRa-only** occasional sync gives the least.
 Its error is the crystal drift between syncs plus LoRa's delivery jitter — a measured
 2 ppm part, drift-corrected, holds ms-level over an hour; uncorrected ~7 ms/h, a plain
 20 ppm crystal ~70 ms/h; and a LoRa timestamp not hardware-stamped on a defined symbol
@@ -437,11 +444,20 @@ adds tens of ms. Net: tens-to-hundreds of ms absolute — ample for meteo and si
 relative work, marginal for multi-station seismic location, which is why absolute
 precision wants a PPS source.
 
-**Getting PPS to the steerer without a bus round-trip.** A GPS node already runs on the
-distributed clock, so it captures PPS against that clock locally and ships the
-`(tick ↔ UTC)` anchor as ordinary node data — the raw edge never crosses the bus. A
-dedicated PPS conductor (its own line or a spare RS-485 pair) is the alternative: a
-fixed cable delay (~5 ns/m, tens of ns over temperature) that calibrates out once.
+**One GPS, route its PPS separately.** A station needs a single GPS — more receivers
+buy nothing (independent units agree only to tens of ns, and the shared clock already
+gives sub-µs *relative* timing). That one PPS is routed to whatever consumes it: a GPS
+node runs on the distributed clock, so it can capture PPS against that clock locally and
+ship the `(tick ↔ UTC)` anchor as ordinary node data — the raw edge never crosses the
+bus; or, where the edge must reach a head-end steerer, it goes on its own conductor (a
+dedicated line or a spare RS-485 pair), a fixed cable delay (~5 ns/m, tens of ns over
+temperature) that calibrates out once.
+
+**Recommendation.** Run the software default — shared clock for relative sync, write
+each record's true time, measure-and-correct the drift (sub-ms with a PPS source).
+Everything above about *steering* the clock — GPSDO, FRACN, the dedicated-PPS plumbing —
+is a documented option, not a requirement: build it only where a deployment wants
+exactly-uniform seconds.
 
 ---
 
