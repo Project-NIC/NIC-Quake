@@ -288,6 +288,15 @@ Two uplink tiers, split by what each radio is good at:
 Net: LoRa is the always-on heartbeat/alert beacon; Wi-Fi is "do everything when
 connected". Each does only what its physics is good for.
 
+**Transport- and payload-agnostic.** "Wi-Fi" is the *rich-uplink role*, not the wire:
+Ethernet (an ESP32 RMII PHY, or a W5500) or cellular fill it identically — nothing
+below the master changes. The payload is a free choice too: ship the **native MLA
+container, DMD-compressed as it sits**, straight to the server (lean, nothing to
+re-encode), or stream **SeedLink** (real-time miniSEED over TCP — the `mseed` export
+already makes the miniSEED) for FDSN/IRIS consumers. The network speaks the standard
+when something wants it, without being forced to convert; the native format travels
+onward just as well.
+
 ---
 
 ## D26 — Node TYPE: a separate identity field, learned at discovery
