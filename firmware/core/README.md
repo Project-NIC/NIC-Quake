@@ -72,6 +72,7 @@ Reusable hardware blocks shared by every node and master — copy a block, don't
 |---|---|
 | `bus-485-clock.md` | The NodeBus: RS-485 data pair + regenerated 8.192 MHz clock pair, termination |
 | `bus-modbus.md` | The leaf Modbus RS-485 from a node to its COTS sensors |
+| `gps-pps.md` | GPS PPS / time link — commodity module + basic RS-485 wrap (1/2/3 pairs) |
 | `datalogger.md` | The master / head-end (ESP32 + TCXO + microSD + uplink) |
 | `protection-485.md` | Tiered RS-485 surge protection (SHORT / LONG / ISO), identical on both NodeBus pairs |
 | `protection-power.md` | Tiered source-side power protection, isolated DC-DC |

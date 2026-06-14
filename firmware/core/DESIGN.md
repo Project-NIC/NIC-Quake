@@ -451,7 +451,8 @@ node runs on the distributed clock, so it can capture PPS against that clock loc
 ship the `(tick ↔ UTC)` anchor as ordinary node data — the raw edge never crosses the
 bus; or, where the edge must reach a head-end steerer, it goes on its own conductor (a
 dedicated line or a spare RS-485 pair), a fixed cable delay (~5 ns/m, tens of ns over
-temperature) that calibrates out once.
+temperature) that calibrates out once. Module choice and the (basic, lightly
+protected) RS-485 wrap are in `blocks/gps-pps.md`.
 
 **Recommendation.** Run the software default — shared clock for relative sync, write
 each record's true time, measure-and-correct the drift (sub-ms with a PPS source).
