@@ -408,6 +408,41 @@ Because one oscillator feeds the whole network, this frequency-locks every node 
 once. More hardware (VCTCXO + DAC + loop) — an upgrade, not the default; "measure, don't
 steer" is cheaper and already sub-ms.
 
+**Anchor the time, not the clock — and why the choice barely matters.** Two ways tie
+samples to GPS: *anchor the time* — let the oscillator free-run and write each
+record's true GPS time as it lands (the default, `nic-timesync`) — or *anchor the
+clock* — steer it so every second holds exactly N samples (the GPSDO above). But the
+record already carries `timestamp` + `subsec`, so **the data is correctly placed
+either way**; the only difference is whether the per-second sample *count* is constant
+(steered) or wobbles by ±1 (free-running). A sample on a second boundary is a ±1
+labelling question, not a timing error — its instant is the same on both sides and
+miniSEED's per-record start time absorbs it. Correctness needs no disciplined clock;
+uniform counts are a convenience, so the working default is "just write the time" and
+let it float. (If ever steered, the actuator need not be analog: an on-chip
+fractional-N PLL — FRACN — or a digitally-trimmed oscillator does it with no DAC.)
+
+**DMD keyframes are dense anchors.** When the stream is DMD-compressed a keyframe falls
+every few samples (≈ one in eight in the seismic profile). Each keyframe is a natural
+re-anchor, so true time is re-pinned far more often than once per second; inter-anchor
+drift is bounded by the keyframe interval (tens of ms of samples) and the timing can
+simply float — write the time as the data arrives, no alignment.
+
+**Sync-source budget.** *Relative* timing within a bus is the shared clock — sub-µs
+whatever the absolute source. *Absolute* timing depends on that source: a **GPS/PPS**
+anchor gives sub-ms (single-digit µs); a **LoRa-only** occasional sync gives far less.
+Its error is the crystal drift between syncs plus LoRa's delivery jitter — a measured
+2 ppm part, drift-corrected, holds ms-level over an hour; uncorrected ~7 ms/h, a plain
+20 ppm crystal ~70 ms/h; and a LoRa timestamp not hardware-stamped on a defined symbol
+adds tens of ms. Net: tens-to-hundreds of ms absolute — ample for meteo and single-bus
+relative work, marginal for multi-station seismic location, which is why absolute
+precision wants a PPS source.
+
+**Getting PPS to the steerer without a bus round-trip.** A GPS node already runs on the
+distributed clock, so it captures PPS against that clock locally and ships the
+`(tick ↔ UTC)` anchor as ordinary node data — the raw edge never crosses the bus. A
+dedicated PPS conductor (its own line or a spare RS-485 pair) is the alternative: a
+fixed cable delay (~5 ns/m, tens of ns over temperature) that calibrates out once.
+
 ---
 
 ## D28 — Generic config slots (front-agnostic protocol, front-defined meaning)
