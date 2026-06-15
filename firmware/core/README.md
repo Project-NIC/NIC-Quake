@@ -59,6 +59,7 @@ compiles and unit-tests on a plain PC.
 | `nic-clocksync` | Clock-pin switch sequencing (RC → HSE) + watchdog recovery |
 | `nic-timesync` | PPS-anchored absolute time — anchor + sample-index interpolation (no per-sample timestamps) |
 | `nic-lora` | Master uplink: fixed 16-byte LoRa telemetry frame (values, not text) |
+| `nic-uplink` | Head-end record spool — batch on N-or-T, store-and-forward to SD/MLA and/or the live link (D29) |
 
 The remaining hardware-bound pieces (the board HAL that supplies the callbacks) live in
 each **front's** glue (`../node`, `../master`, …), because that is where the

@@ -499,3 +499,44 @@ Supersedes the four named `SET_*` opcodes (concept stage, nothing deployed).
 
 ---
 
+## D29 — Head-end uplink batching: spool the record stream, store-and-forward
+
+A node never uplinks — it only speaks the NodeBus; the **head-end** timestamps, stores
+and uplinks (D25). Between the per-record stream and those outputs sits a small batch
+spool (`nic-uplink`): records accumulate and flush as **one batch on whichever comes
+first — N records or T milliseconds** (~1 s).
+
+Per-record I/O is wrong on both ends, and one mechanism fixes both:
+- **The SD card.** Small writes wreck flash — a sub-sector write triggers a
+  read-modify-write of a whole **erase block** (write amplification), and every append
+  re-touches the **FAT / directory** sectors (metadata hot-spots that die first), which
+  cheap cards' weak wear-levelling cannot spread. Writing in ~1 s blocks (KB, sequential)
+  instead of tens of bytes is the difference between a card that lasts and one that
+  doesn't.
+- **The IP link.** Per-packet overhead (headers, TCP, a Wi-Fi airtime slot) dwarfs one
+  small record; a ~1 s batch amortises it and sits better against the MTU.
+
+**Store-and-forward, durable-first.** The batch goes to the durable sink (SD / MLA)
+**first** — the card is the source of truth — then to the live sink (Wi-Fi / Ethernet /
+SeedLink) best-effort. A dropped live link costs no data (the durable copy forwards
+later); a failed durable write **retains** the batch for retry rather than dropping it.
+Either sink may be absent → three modes: **store+send / store-only / send-only**
+(send-only keeps no archive and accepts loss if the link is down). A crash loses at most
+the open batch (~1 s) — the accepted floor, because chasing sub-second durability *is*
+the small-write card abuse this avoids; the only clean way below it is a brownout-flush
+off a small supercap, an option not a requirement.
+
+**One source per spool.** Records are fixed-stride and a spool carries a single source,
+so the durable side is **one MLA file per station** — sources are never mixed in a file
+(and at MB-scale files, scanning one is instant regardless). Time resolution is not lost
+to batching: each record still carries its own index/sub-second (D27); the batch only
+stamps a base second.
+
+**Transport- and payload-agnostic (D25).** The sinks are callbacks — the same batch
+frames to a raw NIC batch, an MLA append, or a SeedLink record, nothing below the
+head-end caring which. Big-endian, closed with CRC-16-CCITT (D10) like every NIC frame:
+`[MAGIC][source][rec_len][count][base_unix32][record×count][CRC16]`. Implemented portable
+and host-tested as `nic-uplink`; the SD and socket specifics are the head-end glue's.
+
+---
+

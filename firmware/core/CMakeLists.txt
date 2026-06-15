@@ -55,6 +55,11 @@ add_library(nic-clocksync STATIC lib/nic-clocksync/src/nic_clocksync.c)
 target_include_directories(nic-clocksync PUBLIC lib/nic-clocksync/include)
 target_link_libraries(nic-clocksync PUBLIC nic-common)
 
+# --- Head-end record spool: batch on N-or-T, store-and-forward (portable) -
+add_library(nic-uplink STATIC lib/nic-uplink/src/nic_uplink.c)
+target_include_directories(nic-uplink PUBLIC lib/nic-uplink/include)
+target_link_libraries(nic-uplink PUBLIC nic-common)
+
 # --- Core tests (host only) ---------------------------------------------
 enable_testing()
 
@@ -81,3 +86,7 @@ add_test(NAME test_timesync COMMAND test_timesync)
 add_executable(test_clocksync test/test_clocksync.c)
 target_link_libraries(test_clocksync PRIVATE nic-clocksync)
 add_test(NAME test_clocksync COMMAND test_clocksync)
+
+add_executable(test_uplink test/test_uplink.c)
+target_link_libraries(test_uplink PRIVATE nic-uplink)
+add_test(NAME test_uplink COMMAND test_uplink)
